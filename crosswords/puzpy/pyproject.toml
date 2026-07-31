@@ -1,0 +1,74 @@
+[project]
+name = "puzpy"
+description = "python crossword puzzle library"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "MIT"
+license-files = [ "LICENSE" ]
+version = "0.6.1"
+requires-python = ">=3.9"
+keywords = [ "puz", "crosswords", "crossword", "puzzle", "acrosslite", "xword", "xwords" ]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment :: Puzzle Games",
+]
+authors = [
+    { name = "Alex Dejarnatt", email = "adejarnatt@gmail.com" },
+]
+maintainers = [
+    { name = "Alex Dejarnatt", email = "adejarnatt@gmail.com" },
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest<9.1", 
+    "pytest-codeblocks", 
+    "pytest-cov",
+    "pyright", 
+    "ruff"
+]
+publish = ["build", "twine"]
+
+[tool.pytest.ini_options]
+addopts = "--codeblocks"
+testpaths = ["README.md", "*.py"]
+
+[tool.coverage.run]
+source = ["puz"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.setuptools]
+py-modules = ["puz"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[project.urls]
+Repository = "https://github.com/alexdej/puzpy.git"
+Issues = "https://github.com/alexdej/puzpy/issues"
+
+[tool.pyright]
+include = ["*.py"]
+pythonVersion = "3.9"
+typeCheckingMode = "standard"
+
+[tool.ruff]
+line-length = 127
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM", "RET", "RUF", "A", "PT", "PIE"]
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+

@@ -1,0 +1,11 @@
+
+[dev]
+pytest<9.1
+pytest-codeblocks
+pytest-cov
+pyright
+ruff
+
+[publish]
+build
+twine

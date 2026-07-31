@@ -1,0 +1,6 @@
+[project]
+name = "jumble-master"
+version = "0.1.0"
+description = "Fetch daily Jumble puzzle, save cartoon and printable PDF"
+requires-python = ">=3.11"
+dependencies = []

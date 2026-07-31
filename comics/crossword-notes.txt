@@ -1,0 +1,7 @@
+
+
+uv run xword-dl lat
+
+uv run python puz_viewer.py ../xword-dl-main/LA\ Times\ -\ 20260628.puz > test2.html
+
+then convert to pdf and print
