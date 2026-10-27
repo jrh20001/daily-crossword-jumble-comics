@@ -7,3 +7,10 @@ __pycache__/
 cron.log
 todays-input/
 todays-output/
+# agent session logs
+pi-session-*.html
+# dated script backups
+*.bak-*
+# runtime lock / cache files
+.crossword.lock
+.ruff_cache/

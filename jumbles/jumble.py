@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""jumble: fetch today's Jumble puzzle, save cartoon + printable PDF."""
-import json, os, subprocess, sys, urllib.request
+"""jumble: fetch today's Jumble puzzle, save cartoon + printable HTML."""
+import json, os, sys, urllib.request
 from datetime import datetime as dt
 from client import JumbleClient
 
 OUTPUT_DIR = 'output'
+DATE_FILE = os.path.join(OUTPUT_DIR, 'jumble-date.txt')
 CSS = """  @page { margin: 0.25in; size: letter; }
   body { font-family: 'Courier New', Courier, monospace; font-size: 9pt; max-width: 8in; margin: 0 auto; padding: 0; }
   .topline { font-size: 16pt; font-weight: bold; text-align: center; margin: 0 0 4px 0; }
@@ -22,21 +23,20 @@ CSS = """  @page { margin: 0.25in; size: letter; }
   .bonus-group .grid { margin: 0 auto; }
   .footer { text-align: center; font-size: 7pt; color: #999; margin-top: 10px; border-top: 1px solid #ccc; padding-top: 4px; }"""
 
+# exit codes consumed by get-jumble.sh
+EXIT_NO_PUZZLE_TODAY = 3
+EXIT_STALE_PUZZLE = 4
+
 
 def fetch():
-    """Fetch puzzle data; fall back to previous day if today's isn't available."""
+    """Fetch today's puzzle only. Never fall back to an older puzzle:
+    printing a previous day's Jumble as if it were today's is a bug."""
     jc = JumbleClient()
-    today = dt.today()
-    for offset in range(4):  # ponytail: try today then up to 3 days back
-        from datetime import timedelta
-        date = today - timedelta(days=offset)
-        try:
-            puzzle = jc.get_jumble(date)
-            return puzzle
-        except Exception as e:
-            if offset == 0:
-                print(f"Today's puzzle not available ({e}), trying previous day...")
-    raise RuntimeError('No puzzle available for today or recent days')
+    try:
+        return jc.get_jumble(dt.today())
+    except Exception as e:
+        print(f"No Jumble published for today ({e})")
+        return None
 
 
 def download_image(url, path):
@@ -139,30 +139,38 @@ def _get_solutions(puzzle):
     return words
 
 
-def build_pdf(html_path, pdf_path):
-    """Render HTML to PDF via headless Chrome."""
-    chrome = '/opt/google/chrome/chrome'
-    if not os.path.exists(chrome):
-        print('Warning: Chrome not found at /opt/google/chrome/chrome, skipping PDF')
-        return False
-    cmd = [chrome, '--headless', '--no-sandbox', '--disable-gpu',
-           f'--print-to-pdf={pdf_path}', '--no-margins',
-           f'file://{html_path}']
-    result = subprocess.run(cmd, capture_output=True, timeout=20)
-    return result.returncode == 0
-
-
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+    # Never let a previous run's artifacts reach the printer.
+    for stale in ('jumble-puzzle.pdf', 'jumble-print.html', 'jumble-date.txt'):
+        p = os.path.join(OUTPUT_DIR, stale)
+        if os.path.exists(p):
+            os.remove(p)
+
     print('Fetching puzzle...')
     puzzle = fetch()
+    if puzzle is None:
+        print('Nothing published today - not printing.')
+        return EXIT_NO_PUZZLE_TODAY
+
+    try:
+        published = dt.strptime(puzzle['date'], '%m/%d/%Y').date()
+    except (KeyError, ValueError):
+        print(f"ERROR: unparseable puzzle date {puzzle.get('date')!r}", file=sys.stderr)
+        return EXIT_STALE_PUZZLE
+
     print(f'  date: {puzzle["date"]}')
     for c in puzzle['clues']:
         print(f'  {c["jumbled"]} -> {c["answer"]}  circles: {c["circles"]}')
     print(f'  caption: {puzzle["caption"]}')
     print(f'  layout: {puzzle["layout"]}')
     print(f'  answer: {puzzle["answer"]}')
+
+    # Only today's puzzle is printable.
+    if published != dt.today().date():
+        print(f'ERROR: puzzle is dated {puzzle["date"]}, not today - not printing', file=sys.stderr)
+        return EXIT_STALE_PUZZLE
 
     print('\nDownloading cartoon...')
     cartoon_path = os.path.join(OUTPUT_DIR, 'cartoon.png')
@@ -175,18 +183,13 @@ def main():
         f.write(html)
     print(f'  html -> {html_path}')
 
-    print('Building PDF...')
-    pdf_path = os.path.join(OUTPUT_DIR, 'jumble-puzzle.pdf')
-    pdf_path_abs = os.path.abspath(pdf_path)
-    html_path_abs = os.path.abspath(html_path)
-    ok = build_pdf(html_path_abs, pdf_path_abs)
-    if ok:
-        print(f'  pdf -> {pdf_path} ({os.path.getsize(pdf_path)} bytes)')
-    else:
-        print('  PDF generation failed (Chrome not available). HTML is ready.')
+    with open(DATE_FILE, 'w') as f:
+        f.write(puzzle['date'])
+    print(f'  date marker -> {DATE_FILE} ({puzzle["date"]})')
 
     print(f'\nDone! Files in {OUTPUT_DIR}/')
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

@@ -60,6 +60,7 @@ def generate_html(rows):
 <style>
   @page {{
     margin: 0;
+    size: A4;
   }}
   body {{
     font-family: system-ui, sans-serif;
@@ -90,7 +91,8 @@ def generate_html(rows):
     page-break-inside: avoid;
   }}
   .comic img {{
-    width: 100%;
+    max-width: 100%;
+    max-height: 85vh;
     height: auto;
     display: block;
   }}
