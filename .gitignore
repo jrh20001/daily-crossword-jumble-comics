@@ -14,3 +14,6 @@ pi-session-*.html
 # runtime lock / cache files
 .crossword.lock
 .ruff_cache/
+
+# legacy GoComics Playwright cookie cache (fetch_gocomics.py no longer uses it)
+.gocomics-cookies.json

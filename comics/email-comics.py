@@ -15,16 +15,19 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
+import os
 from datetime import date
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = SCRIPT_DIR / "todays-output"
-TODAY = date.today().strftime("%Y-%m-%d")
+# backfill runs pass COMICS_DATE so filenames/subject match the strip date
+TODAY = os.environ.get("COMICS_DATE") or date.today().strftime("%Y-%m-%d")
 
 FROM = "jerryrhinson@gmail.com"
 TO = "rahinson58@gmail.com, jerryrhinson@gmail.com, sjhinson@gmail.com, rhinson2010@gmail.com"
-SUBJECT = f"Daily Comics — {TODAY}"
+# COMICS_SUBJECT_SUFFIX marks a re-send, e.g. " (corrected — all 27 strips)"
+SUBJECT = f"Daily Comics — {TODAY}" + os.environ.get("COMICS_SUBJECT_SUFFIX", "")
 
 def main():
     if len(sys.argv) < 2:
@@ -42,7 +45,19 @@ def main():
     msg["From"] = FROM
     msg["To"] = TO
     msg["Subject"] = SUBJECT
-    msg.attach(MIMEText(f"Today's comics ({TODAY}) attached.", "plain"))
+    body = f"Today's comics ({TODAY}) attached."
+    missing_file = OUTPUT_DIR / "missing-strips.txt"
+    if missing_file.exists():
+        missing = [line.strip() for line in missing_file.read_text().splitlines() if line.strip()]
+        if missing:
+            body += (
+                f"\n\nWARNING: {len(missing)} of 27 strips are missing from this PDF:\n  "
+                + "\n  ".join(missing)
+                + "\n\nGoComics is currently serving a bot-challenge page instead of the strips"
+                  " (their side); ComicsKingdom strips are complete. The missing strips will be"
+                  " retried on the next run."
+            )
+    msg.attach(MIMEText(body, "plain"))
 
     # ponytail: gs compresses 28MB->~4MB, fits under Gmail's 25MB limit
     with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:

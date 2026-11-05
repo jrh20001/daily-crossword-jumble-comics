@@ -2,6 +2,7 @@
 """Aggregate today's comics from todays-input/ into a smart-layout HTML page in todays-output/."""
 
 import base64
+import os
 from datetime import date
 from pathlib import Path
 from PIL import Image
@@ -10,7 +11,8 @@ from PIL import Image
 SCRIPT_DIR = Path(__file__).resolve().parent
 INPUT_DIR = SCRIPT_DIR / "todays-input"
 OUTPUT_DIR = SCRIPT_DIR / "todays-output"
-TODAY = date.today().strftime("%Y-%m-%d")
+# backfill runs pass COMICS_DATE so filenames/subject match the strip date
+TODAY = os.environ.get("COMICS_DATE") or date.today().strftime("%Y-%m-%d")
 
 
 

@@ -2,12 +2,14 @@
 """Convert HTML to PDF via WeasyPrint. No Chrome needed."""
 
 from pathlib import Path
+import os
 from datetime import date
 from weasyprint import HTML
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = SCRIPT_DIR / "todays-output"
-TODAY = date.today().strftime("%Y-%m-%d")
+# backfill runs pass COMICS_DATE so filenames/subject match the strip date
+TODAY = os.environ.get("COMICS_DATE") or date.today().strftime("%Y-%m-%d")
 HTML_PATH = OUTPUT_DIR / f"comics-{TODAY}.html"
 PDF_PATH = OUTPUT_DIR / f"comics-{TODAY}.pdf"
 

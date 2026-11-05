@@ -1,3 +1,32 @@
-doseage @
+Comics pipeline notes
+=====================
 
-need script to aggregate all and email to users
+See README.md in this directory for the pipeline, the GoComics bot-wall details
+and the rate-limit budget. See summary-comics-2026-11-04.md for the full
+investigation that ended the dosage era.
+
+Quick facts (2026-11-05):
+
+  * 27 strips daily: 7 ComicsKingdom + 20 GoComics.
+  * GoComics only answers requests that send Accept-Language. Any plain HTTP
+    client without that header gets HTTP 403 "Establishing a secure connection".
+  * The dated strip route /<slug>/<date> returns an empty app shell even when it
+    answers 200; the feature landing page /<slug> carries that day's strip in its
+    JSON-LD, and featureassets.gocomics.com (the image CDN) is open.
+  * GoComics throttles after ~6-9 feature-page requests per host (~20 min).
+    fetch_gocomics.py spends its budget on the strips arcamax does not mirror.
+  * Backfill dates: arcamax only (GoComics landing pages show the newest strip).
+
+Handy checks:
+
+  # is this host blocked right now?  200 = fine, 403 = missing header, 429 = throttled
+  curl -s -o /dev/null -w '%{http_code}\n' \
+    -A 'Mozilla/5.0 (X11; Linux x86_64; rv:158.0) Gecko/20100101 Firefox/158.0' \
+    -H 'Accept-Language: en-US,en;q=0.5' https://www.gocomics.com/pickles
+
+  uv run fetch_gocomics.py --only TheDuplex --dry-run    # show image URL only
+  tail -40 cron.log                                      # last run, per provider rc
+
+History: dosage drove these fetches until GoComics locked it out on 2026-11-03; the
+old comics-list.txt scraper inventory was deleted on 2026-11-05. Comics come from the
+three tables in comics_sources.py.
